@@ -125,6 +125,14 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
         </motion.div>
 
+        {/* Quick Actions */}
+        <motion.div {...fadeIn} transition={{ delay: 0.05 }}>
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/activity")}>
+            <Activity className="w-4 h-4" />
+            Activity Tracker
+          </Button>
+        </motion.div>
+
         {/* Wellness Score */}
         <motion.div {...fadeIn} transition={{ delay: 0.1 }}>
           <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5">
