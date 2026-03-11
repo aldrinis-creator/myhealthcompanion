@@ -20,6 +20,7 @@ const fadeIn = {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: profile } = useQuery({
