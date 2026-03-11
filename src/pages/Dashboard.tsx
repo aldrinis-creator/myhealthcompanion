@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },

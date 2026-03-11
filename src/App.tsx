@@ -29,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/activity" element={<ProtectedRoute><Activity /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster />
