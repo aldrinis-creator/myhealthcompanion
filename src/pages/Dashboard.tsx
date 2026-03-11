@@ -153,9 +153,9 @@ export default function Dashboard() {
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div {...fadeIn} transition={{ delay: 0.15 }}>
-            <Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/activity")}>
               <CardContent className="p-4 flex flex-col items-center text-center">
-                <Pill className="w-8 h-8 text-health-blue mb-2" />
+                <Activity className="w-8 h-8 text-health-green mb-2" />
                 <span className="text-2xl font-bold text-foreground">{medications?.length || 0}</span>
                 <span className="text-xs text-muted-foreground">Active Medications</span>
               </CardContent>
