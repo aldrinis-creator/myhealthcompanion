@@ -1,40 +1,42 @@
 
 
-## Current State
+## Diagnosis
 
-The project has been reduced to just two pages (Auth + Dashboard). The Activity Tracker and Workout Plan pages that previously existed are **missing from the codebase**. The database tables (`activity_sessions`, `activity_goals`, `workout_plans`) still exist, so no data is lost — only the frontend code needs to be rebuilt.
+The app at myhealthcompanion.lovable.app is broken because:
 
-Additionally, the `package.json` build script fix has failed to persist three times. This is the root cause of the build error.
+1. **`package.json` still has the old scripts** — `build:dev` is missing and `build` still includes `tsc &&`. This has failed to persist across multiple attempts using `line_replace`. The build cannot succeed without this fix.
+
+2. **The app has been reduced to only 2 pages** (Auth + Dashboard). Previously built pages (Activity, Workout, etc.) are missing from the codebase, though the database tables remain intact.
 
 ## Plan
 
-### Step 1: Fix package.json (blocking everything)
+### Step 1: Overwrite `package.json` entirely
 
-Rewrite the full `package.json` file using the write tool (not line_replace, which has been failing) to ensure the `build:dev` script is included.
+Use the `write` tool (not `line_replace`) to rewrite the full file, ensuring the scripts block is:
+```json
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "build:dev": "vite build --mode development",
+  "preview": "vite preview"
+}
+```
 
-### Step 2: Create Activity Tracker page (`src/pages/Activity.tsx`)
+This is the **blocking issue** — nothing else matters until this is fixed. The `line_replace` approach has failed 3+ times; a full file write should force the change.
 
-- **Recent Activity section** with **horizontal scrolling** row of metric cards (Steps, Calories, Active Minutes, Avg HR, Cadence, SpO2, Respiratory Rate, Floors Climbed) — using `overflow-x-auto` with `flex-nowrap` and `snap-x` for smooth mobile scrolling
-- Fetches from `activity_sessions` table ordered by most recent
-- Each card shows the metric value with an icon and label
+### Step 2: Create Activity Tracker page with horizontal scrolling and trendlines
 
-### Step 3: Activity Trends with Trendlines (`src/components/ActivityTrends.tsx`)
+Create `src/pages/Activity.tsx` with:
+- Horizontal scrolling recent activity cards (`overflow-x-auto flex-nowrap snap-x`)
+- Fetches from `activity_sessions` table
 
-- Period selector: Daily / Weekly / Monthly
-- Recharts `ComposedChart` with:
-  - `Bar` or `Area` for actual data (Steps, Active Minutes, Avg HR)
-  - `Line` for computed **linear regression trendline** overlaid on the chart
-  - Goal reference line (`ReferenceLine`) scaling by period
-- Trendline calculation: simple linear regression (slope/intercept) computed from the data points
+Create `src/components/ActivityTrends.tsx` with:
+- Period selector (Daily/Weekly/Monthly)
+- Recharts `ComposedChart` with bars for data + `Line` for linear regression trendline
+- Simple `y = mx + b` calculation over the data points
 
-### Step 4: Add route in App.tsx
+### Step 3: Add route in `App.tsx`
 
-- Add `/activity` route as a protected route
-- Add navigation link from Dashboard to Activity page
-
-### Technical Details
-
-- Trendline: Linear regression formula `y = mx + b` computed over the data series, rendered as a `Line` in Recharts
-- Horizontal scroll: `flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-4` with `min-w-[160px] snap-center` on each card
-- Data queries via `@tanstack/react-query` + Supabase client, consistent with existing patterns
+- Add `/activity` as a protected route
+- Add navigation from Dashboard to Activity page
 
