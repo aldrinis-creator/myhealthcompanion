@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -19,6 +20,7 @@ const fadeIn = {
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: profile } = useQuery({
@@ -121,6 +123,14 @@ export default function Dashboard() {
             Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {displayName}
           </h1>
           <p className="text-muted-foreground mt-1">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div {...fadeIn} transition={{ delay: 0.05 }}>
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/activity")}>
+            <Activity className="w-4 h-4" />
+            Activity Tracker
+          </Button>
         </motion.div>
 
         {/* Wellness Score */}
