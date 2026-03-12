@@ -49,20 +49,35 @@ export default function AuthPage() {
     }
   };
 
-  const handleSendOtp = async () => {
+  const handleMobileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const fullPhone = `${countryCode}${mobileNumber}`;
     if (mobileNumber.length < 10) {
       toast.error("Please enter a valid mobile number");
       return;
     }
+    const mappedEmail = dummyEmail(fullPhone);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
-      if (error) throw error;
-      setOtpSent(true);
-      toast.success("OTP sent to your mobile number");
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email: mappedEmail, password });
+        if (error) throw error;
+        toast.success("Welcome back!");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: mappedEmail,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        // Trigger OTP verification for mobile signup
+        const { error: otpError } = await supabase.auth.signInWithOtp({ phone: fullPhone });
+        if (otpError) throw otpError;
+        setOtpSent(true);
+        toast.success("OTP sent to your mobile number for verification");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
