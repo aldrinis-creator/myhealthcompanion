@@ -49,20 +49,35 @@ export default function AuthPage() {
     }
   };
 
-  const handleSendOtp = async () => {
+  const handleMobileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const fullPhone = `${countryCode}${mobileNumber}`;
     if (mobileNumber.length < 10) {
       toast.error("Please enter a valid mobile number");
       return;
     }
+    const mappedEmail = dummyEmail(fullPhone);
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
-      if (error) throw error;
-      setOtpSent(true);
-      toast.success("OTP sent to your mobile number");
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email: mappedEmail, password });
+        if (error) throw error;
+        toast.success("Welcome back!");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: mappedEmail,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        // Trigger OTP verification for mobile signup
+        const { error: otpError } = await supabase.auth.signInWithOtp({ phone: fullPhone });
+        if (otpError) throw otpError;
+        setOtpSent(true);
+        toast.success("OTP sent to your mobile number for verification");
+      }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+      toast.error(err.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
@@ -237,7 +252,7 @@ export default function AuthPage() {
 
         {/* Mobile form */}
         {method === "mobile" && !otpSent && (
-          <div className="space-y-4">
+          <form onSubmit={handleMobileSubmit} className="space-y-4">
             <div className="flex gap-2">
               <div className="relative w-24">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -266,18 +281,50 @@ export default function AuthPage() {
               </div>
             </div>
 
+            <div className="space-y-1">
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type={showPw ? "text" : "password"}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                  placeholder="Password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {isLogin && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
-              type="button"
-              onClick={handleSendOtp}
+              type="submit"
               disabled={loading}
               className="w-full py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Sending…" : "Send OTP"}
+              {loading ? "Please wait…" : isLogin ? "Sign In" : "Sign Up"}
             </button>
-          </div>
+          </form>
         )}
 
-        {/* OTP verification */}
+        {/* OTP verification (only during mobile signup) */}
         {method === "mobile" && otpSent && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
