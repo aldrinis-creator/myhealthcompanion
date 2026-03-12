@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format, isPast, isToday, parseISO } from "date-fns";
+import { motion } from "framer-motion";
 import {
-  CalendarCheck, Plus, Edit2, Trash2, MapPin, User, Clock, X, CheckCircle2, AlertCircle,
+  CalendarCheck, Plus, Edit2, Trash2, MapPin, User, Clock, X, CheckCircle2, AlertCircle, Calendar
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 
 type Appointment = {
   id: string;
@@ -35,10 +40,17 @@ const defaultForm = {
   first_alert_minutes: 15, second_alert_minutes: null as number | null,
 };
 
+const fadeIn = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+};
+
 export default function Appointments() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
@@ -128,10 +140,10 @@ export default function Appointments() {
   function closeDialog() { setDialogOpen(false); setEditId(null); }
 
   const doctorStatusBadge = (status: string | null) => {
-    if (!status || status === "pending") return <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Pending</span>;
-    if (status === "confirmed") return <span className="text-xs px-2 py-0.5 rounded-full bg-health-green/10 text-health-green">Confirmed</span>;
-    if (status === "declined") return <span className="text-xs px-2 py-0.5 rounded-full bg-health-red/10 text-health-red">Declined</span>;
-    if (status === "rescheduled") return <span className="text-xs px-2 py-0.5 rounded-full bg-health-amber/10 text-health-amber">Rescheduled</span>;
+    if (!status || status === "pending") return <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-tighter">Pending</span>;
+    if (status === "confirmed") return <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 uppercase tracking-tighter">Confirmed</span>;
+    if (status === "declined") return <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 uppercase tracking-tighter">Declined</span>;
+    if (status === "rescheduled") return <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase tracking-tighter">Rescheduled</span>;
     return null;
   };
 
@@ -142,162 +154,193 @@ export default function Appointments() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
-          <p className="text-muted-foreground text-sm mt-1">Schedule and manage your appointments</p>
-        </div>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Plus className="h-4 w-4" /> New Appointment
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#f8f9fc] font-sans">
+      <AppHeader title="Appointments" showBack showTabs={false} onBack={() => navigate("/dashboard")} />
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        {(["upcoming", "today", "past"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === f ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-            {f === "upcoming" ? "Upcoming" : f === "today" ? "Due Today" : "Past"}
-          </button>
-        ))}
-      </div>
+      <main className="max-w-lg mx-auto p-4 space-y-6 pb-32">
+        <motion.div {...fadeIn} className="flex justify-between items-center">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Your Schedule</h2>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest leading-none">Manage visits & checkups</p>
+          </div>
+          <Button 
+            onClick={openAdd}
+            className="bg-[#0070c9] hover:bg-[#005ea9] rounded-[16px] px-5 h-12 font-black shadow-md shadow-blue-500/20 text-white"
+          >
+            <Plus className="h-5 w-5 mr-1" /> Book New
+          </Button>
+        </motion.div>
 
-      {isLoading ? (
-        <div className="text-muted-foreground text-sm animate-pulse">Loading…</div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-card rounded-lg border border-border p-10 text-center">
-          <CalendarCheck className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground">No {filter} appointments.</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {filtered.map((a) => (
-            <div key={a.id} className={`bg-card rounded-lg border p-4 flex items-start gap-4 ${isToday(parseISO(a.appointment_date)) ? "border-health-amber" : "border-border"}`}>
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isToday(parseISO(a.appointment_date)) ? "bg-health-amber/10 text-health-amber" : "bg-primary/10 text-primary"}`}>
-                <CalendarCheck className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-foreground">{a.title}</span>
-                  {doctorStatusBadge(a.doctor_status)}
-                  {a.recurrence !== "none" && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground">{a.recurrence}</span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {format(parseISO(a.appointment_date), "EEE, MMM d, yyyy")} at {formatTime12(a.appointment_time)}
-                  {a.end_time && ` – ${formatTime12(a.end_time)}`}
-                </p>
-                {a.description && <p className="text-xs text-muted-foreground mt-1">{a.description}</p>}
-                <div className="flex items-center gap-4 mt-2 flex-wrap">
-                  {a.doctor_name && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground"><User className="h-3 w-3" />{a.doctor_name}</span>
-                  )}
-                  {a.location && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />{a.location}</span>
-                  )}
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3" />Alert: {a.first_alert_minutes}m before</span>
-                </div>
-                {a.doctor_response_note && (
-                  <p className="text-xs text-health-amber mt-2 flex items-center gap-1"><AlertCircle className="h-3 w-3" />Doctor: {a.doctor_response_note}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => openEdit(a)} className="p-2 rounded-md hover:bg-muted transition-colors"><Edit2 className="h-4 w-4 text-muted-foreground" /></button>
-                <button onClick={() => deleteMutation.mutate(a.id)} className="p-2 rounded-md hover:bg-destructive/10 transition-colors"><Trash2 className="h-4 w-4 text-destructive" /></button>
-              </div>
-            </div>
+        {/* Filters */}
+        <motion.div {...fadeIn} transition={{ delay: 0.05 }} className="flex gap-2 bg-slate-100/50 p-1.5 rounded-[20px] border border-slate-100">
+          {(["upcoming", "today", "past"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={cn(
+                "flex-1 h-10 rounded-[14px] text-[11px] font-black uppercase tracking-wider transition-all",
+                filter === f ? "bg-white text-slate-800 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"
+              )}>
+              {f === "upcoming" ? "Upcoming" : f === "today" ? "Today" : "Past"}
+            </button>
           ))}
-        </div>
-      )}
+        </motion.div>
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-pulse text-slate-300">
+            <Calendar className="w-12 h-12 mb-4" />
+            <div className="text-xs font-black uppercase tracking-widest">Loading visits...</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <motion.div 
+            {...fadeIn}
+            className="bg-white p-12 rounded-[32px] border border-slate-100 shadow-sm text-center space-y-4"
+          >
+            <div className="w-16 h-16 bg-[#f1f3fd] rounded-full flex items-center justify-center mx-auto">
+              <Calendar className="w-8 h-8 text-[#0070c9]" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight">All Caught Up!</h2>
+              <p className="text-slate-400 text-sm font-bold">No {filter} appointments found.</p>
+            </div>
+            <Button onClick={openAdd} variant="outline" className="rounded-full px-8 font-black text-xs uppercase tracking-wider h-11 border-slate-200">
+              Schedule Now
+            </Button>
+          </motion.div>
+        ) : (
+          <div className="grid gap-4">
+            {filtered.map((a, index) => (
+              <motion.div
+                key={a.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className={cn(
+                  "bg-white p-6 rounded-[28px] border shadow-sm transition-all group active:scale-[0.98]",
+                  isToday(parseISO(a.appointment_date)) ? "border-amber-200 shadow-amber-500/5" : "border-slate-100"
+                )}
+              >
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex gap-4">
+                    <div className={cn(
+                      "w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
+                      isToday(parseISO(a.appointment_date)) ? "bg-amber-50 text-amber-600" : "bg-[#f1f3fd] text-[#0070c9]"
+                    )}>
+                      <CalendarCheck className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight leading-none">{a.title}</h3>
+                        {doctorStatusBadge(a.doctor_status)}
+                      </div>
+                      <p className="text-[13px] font-bold text-slate-500">{a.doctor_name || "Doctor TBD"}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => openEdit(a)} className="p-2 rounded-full hover:bg-slate-50 transition-colors">
+                      <Edit2 className="h-4 w-4 text-slate-300 group-hover:text-slate-400" />
+                    </button>
+                    <button onClick={() => deleteMutation.mutate(a.id)} className="p-2 rounded-full hover:bg-rose-50 transition-colors">
+                      <Trash2 className="h-4 w-4 text-slate-200 group-hover:text-rose-400" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-50 grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Time & Date</span>
+                    </div>
+                    <div className="text-[13px] font-black text-slate-800">
+                      {format(parseISO(a.appointment_date), "MMM d, EEE")} · {formatTime12(a.appointment_time)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Location</span>
+                    </div>
+                    <div className="text-[13px] font-black text-slate-800 truncate">
+                      {a.location || "TBD / Virtual"}
+                    </div>
+                  </div>
+                </div>
+                
+                {a.description && (
+                  <div className="mt-4 p-3 rounded-[16px] bg-slate-50/50 text-[#64748b] text-[11px] font-bold leading-relaxed border border-slate-50 italic">
+                    {a.description}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </main>
 
       {/* Dialog */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20">
-          <div className="bg-card rounded-lg border border-border shadow-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">{editId ? "Edit Appointment" : "New Appointment"}</h2>
-              <button onClick={closeDialog} className="p-1 rounded hover:bg-muted"><X className="h-4 w-4" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden my-8"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-slate-50 bg-[#f8f9fc]">
+              <h2 className="text-lg font-black text-slate-800 tracking-tight">
+                {editId ? "Edit Appointment" : "New Appointment"}
+              </h2>
+              <button onClick={closeDialog} className="p-2 rounded-full hover:bg-slate-200 transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="p-4 space-y-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-foreground">Title *</label>
-                <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+            <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Title *</label>
+                <input required value={form.title} placeholder="e.g. Dental Checkup" onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-300" />
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-foreground">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Date *</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Date *</label>
                   <input type="date" required value={form.appointment_date} onChange={(e) => setForm({ ...form, appointment_date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+                    className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Start Time *</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Time *</label>
                   <input type="time" required value={form.appointment_time} onChange={(e) => setForm({ ...form, appointment_time: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+                    className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">End Time</label>
-                  <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Type</label>
-                  <select value={form.appointment_type} onChange={(e) => setForm({ ...form, appointment_type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none">
-                    <option value="in_person">In Person</option>
-                    <option value="virtual">Virtual</option>
-                    <option value="phone">Phone</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Doctor Name</label>
+                <input value={form.doctor_name} placeholder="Dr. Smith" onChange={(e) => setForm({ ...form, doctor_name: e.target.value })}
+                  className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Doctor Name</label>
-                  <input value={form.doctor_name} onChange={(e) => setForm({ ...form, doctor_name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Location</label>
-                  <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Location</label>
+                <input value={form.location} placeholder="Hospital / Clinical Address" onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Recurrence</label>
-                  <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none">
-                    <option value="none">None</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Alert (min before)</label>
-                  <input type="number" min={0} value={form.first_alert_minutes} onChange={(e) => setForm({ ...form, first_alert_minutes: +e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Notes</label>
+                <textarea value={form.description} placeholder="Special instructions or prep..." onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2}
+                  className="w-full p-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-sm focus:outline-none resize-none" />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={closeDialog} className="px-4 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">Cancel</button>
-                <button type="submit" disabled={saveMutation.isPending} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                  {saveMutation.isPending ? "Saving…" : editId ? "Update" : "Create"}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={closeDialog} className="flex-1 h-12 rounded-[16px] border border-slate-100 font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm">Cancel</button>
+                <button type="submit" disabled={saveMutation.isPending} className="flex-1 h-12 rounded-[16px] bg-[#0070c9] text-white font-black text-sm hover:bg-[#005ea9] shadow-md shadow-blue-500/20 disabled:opacity-50 transition-all">
+                  {saveMutation.isPending ? "Saving…" : editId ? "Update Visit" : "Book Visit"}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+
+      <AppFooter />
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }

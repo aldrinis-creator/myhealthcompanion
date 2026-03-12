@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { motion } from "framer-motion";
 import {
-  Pill, Plus, Edit2, Trash2, AlertTriangle, CheckCircle2, Clock, X,
+  Pill, Plus, Edit2, Trash2, AlertTriangle, Clock, X, Bell, Truck, Scan, ChevronRight, History
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 
 type Medication = {
   id: string;
@@ -23,23 +28,23 @@ type Medication = {
   created_at: string;
 };
 
-const severityColors: Record<string, string> = {
-  critical: "bg-health-red/10 text-health-red border-health-red/30",
-  high: "bg-health-amber/10 text-health-amber border-health-amber/30",
-  medium: "bg-health-blue/10 text-health-blue border-health-blue/30",
-  low: "bg-health-green/10 text-health-green border-health-green/30",
-};
-
 const defaultForm = {
   name: "", dosage: "", composition: "", scheduled_time: "08:00",
   scheduled_times: ["08:00"], severity: "medium",
   total_quantity: 30, current_quantity: 30, low_stock_threshold: 5,
 };
 
+const fadeIn = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+};
+
 export default function Medications() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
@@ -143,148 +148,224 @@ export default function Medications() {
     med.current_quantity != null && med.low_stock_threshold != null && med.current_quantity <= med.low_stock_threshold;
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Medications</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your medications and track stock</p>
-        </div>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Plus className="h-4 w-4" /> Add Medication
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#f8f9fc] font-sans pb-20">
+      <AppHeader title="Medications" showBack showTabs={false} onBack={() => navigate("/dashboard")} />
 
-      {isLoading ? (
-        <div className="text-muted-foreground text-sm animate-pulse">Loading medications…</div>
-      ) : meds.length === 0 ? (
-        <div className="bg-card rounded-lg border border-border p-10 text-center">
-          <Pill className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground">No medications added yet.</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {meds.map((med) => (
-            <div key={med.id} className="bg-card rounded-lg border border-border p-4 flex items-start gap-4">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${severityColors[med.severity] || severityColors.medium}`}>
-                <Pill className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-foreground">{med.name}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${severityColors[med.severity] || severityColors.medium}`}>
-                    {med.severity}
-                  </span>
-                  {!med.is_active && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Inactive</span>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">{med.dosage}</p>
-                {med.composition && <p className="text-xs text-muted-foreground">{med.composition}</p>}
-                <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {(med.scheduled_times || [med.scheduled_time]).map((t) => t.slice(0, 5)).join(", ")}
-                  </div>
-                  {med.current_quantity != null && (
-                    <div className={`flex items-center gap-1 text-xs ${isLowStock(med) ? "text-health-red font-medium" : "text-muted-foreground"}`}>
-                      {isLowStock(med) && <AlertTriangle className="h-3 w-3" />}
-                      Stock: {med.current_quantity}/{med.total_quantity ?? "—"}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => openEdit(med)} className="p-2 rounded-md hover:bg-muted transition-colors">
-                  <Edit2 className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <button onClick={() => deleteMutation.mutate(med.id)} className="p-2 rounded-md hover:bg-destructive/10 transition-colors">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </button>
-              </div>
-            </div>
+      <main className="max-w-lg mx-auto p-6 space-y-8">
+        {/* Page Title Section */}
+        <motion.div {...fadeIn} className="space-y-1">
+          <h1 className="text-4xl font-black text-[#1e293b] tracking-tight">My Tablets</h1>
+          <p className="text-[#64748b] font-bold">Track your medications and never miss a dose.</p>
+        </motion.div>
+
+        {/* Quick Actions Bar */}
+        <motion.div {...fadeIn} transition={{ delay: 0.05 }} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {[
+            { label: 'Notification Setup', icon: <Bell className="w-4 h-4" /> },
+            { label: 'Order Medicines', icon: <Truck className="w-4 h-4" /> },
+            { label: 'Alarm Settings', icon: <Clock className="w-4 h-4" /> }
+          ].map((action, i) => (
+            <button key={i} className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-black/5 shadow-sm whitespace-nowrap text-[12px] font-black text-[#64748b] hover:bg-slate-50 transition-colors">
+              {action.icon} {action.label}
+            </button>
           ))}
+        </motion.div>
+
+        {/* Primary Action */}
+        <motion.button 
+          {...fadeIn} 
+          transition={{ delay: 0.1 }}
+          onClick={openAdd}
+          className="w-full bg-[#0087c1] text-white py-4 rounded-[24px] font-black text-lg shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 hover:bg-[#0076a8] transition-all active:scale-95"
+        >
+           <Plus className="w-7 h-7 stroke-[3]" /> Add Medication
+        </motion.button>
+
+        {/* Scan Section */}
+        <motion.div 
+          {...fadeIn} 
+          transition={{ delay: 0.15 }}
+          className="bg-[#0087c1] rounded-[24px] p-5 flex items-center justify-between text-white shadow-lg cursor-pointer group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-[18px] flex items-center justify-center border border-white/20 shadow-inner">
+                <Scan className="w-6 h-6" />
+            </div>
+            <div className="space-y-0.5">
+              <span className="font-black text-sm block">Scan Prescription</span>
+              <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Instant Sync & Savings</span>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
+        </motion.div>
+
+        {/* Meds List */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-[11px] font-black text-[#64748b] tracking-[0.2em] uppercase opacity-70">Medication Inventory</h3>
+            <span className="text-[12px] font-black text-[#1e293b]">{format(new Date(), "p")}</span>
+          </div>
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-10 animate-pulse text-slate-300">
+               <Pill className="w-10 h-10 mb-2" />
+               <div className="text-[10px] font-black uppercase tracking-widest">Checking stock...</div>
+            </div>
+          ) : meds.length === 0 ? (
+            <div className="bg-white rounded-[32px] border border-black/5 p-12 text-center shadow-sm">
+               <Pill className="mx-auto h-12 w-12 text-slate-200 mb-4" />
+               <p className="text-[#64748b] font-bold text-sm">Your medicine cabinet is empty.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {meds.map((med, i) => (
+                <motion.div 
+                  key={med.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white rounded-[32px] border border-black/5 shadow-sm overflow-hidden flex flex-col group active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex min-h-[120px]">
+                     {/* Color strip based on severity */}
+                     <div className={cn(
+                       "w-3",
+                       med.severity === 'critical' ? 'bg-rose-500' : 
+                       med.severity === 'high' ? 'bg-amber-500' : 
+                       med.severity === 'medium' ? 'bg-[#0087c1]' : 'bg-emerald-500'
+                     )} />
+                     
+                     <div className="flex-1 p-6 flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                           <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xl font-black text-[#1e293b] tracking-tight">{med.name}</h4>
+                                {isLowStock(med) && (
+                                  <span className="flex items-center gap-1 bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter animate-pulse">
+                                    <AlertTriangle className="w-2.5 h-2.5" /> Low Stock
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[#64748b] font-bold text-sm">({med.composition || med.dosage})</p>
+                           </div>
+                           <div className="flex gap-1">
+                              <button onClick={() => openEdit(med)} className="p-2 text-slate-300 hover:text-[#0087c1] transition-colors">
+                                <Pencil className="w-5 h-5" />
+                              </button>
+                              <button onClick={() => deleteMutation.mutate(med.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                           </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-4">
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl text-[11px] font-black text-[#64748b] border border-slate-100">
+                             <Pill className="w-3.5 h-3.5 text-[#0087c1]" /> {med.dosage}
+                          </div>
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl text-[11px] font-black text-[#64748b] border border-slate-100">
+                             <Clock className="w-3.5 h-3.5 text-[#0087c1]" /> {med.scheduled_time}
+                          </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Stock Info Bar */}
+                  <div className="px-6 py-3 bg-slate-50/50 border-t border-black/5 flex justify-between items-center">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inventory Status</span>
+                        <div className="h-1 w-20 bg-slate-200 rounded-full overflow-hidden">
+                           <div 
+                             className={cn("h-full rounded-full transition-all duration-1000", isLowStock(med) ? "bg-rose-500" : "bg-emerald-500")} 
+                             style={{ width: `${Math.min(100, ((med.current_quantity || 0) / (med.total_quantity || 1)) * 100)}%` }} 
+                           />
+                        </div>
+                     </div>
+                     <span className={cn("text-[11px] font-black", isLowStock(med) ? "text-rose-500" : "text-slate-600")}>
+                        {med.current_quantity} / {med.total_quantity || "—"} Left
+                     </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </main>
 
       {/* Dialog */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20">
-          <div className="bg-card rounded-lg border border-border shadow-lg w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">{editId ? "Edit Medication" : "Add Medication"}</h2>
-              <button onClick={closeDialog} className="p-1 rounded hover:bg-muted"><X className="h-4 w-4" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden my-8"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-slate-50 bg-[#f8f9fc]">
+              <h2 className="text-lg font-black text-slate-800 tracking-tight">
+                {editId ? "Edit Medication" : "Add Medication"}
+              </h2>
+              <button onClick={closeDialog} className="p-2 rounded-full hover:bg-slate-200 transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="p-4 space-y-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-foreground">Name *</label>
-                <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+            <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="p-6 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Medication Name *</label>
+                <input required value={form.name} placeholder="e.g. Atorvastatin" onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Dosage *</label>
-                  <input required value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })}
-                    placeholder="e.g. 500mg" className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Dosage *</label>
+                  <input required value={form.dosage} placeholder="e.g. 20mg" onChange={(e) => setForm({ ...form, dosage: e.target.value })}
+                    className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Severity</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Severity</label>
                   <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
+                    className="w-full h-12 px-4 rounded-[16px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs">
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="critical">Critical (Essential)</option>
                   </select>
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-foreground">Composition</label>
-                <input value={form.composition} onChange={(e) => setForm({ ...form, composition: e.target.value })}
-                  placeholder="Salt / active ingredient" className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Scheduled Times</label>
-                <div className="flex gap-2">
-                  <input type="time" value={timeInput} onChange={(e) => setTimeInput(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                  <button type="button" onClick={addTime} className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm">Add</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.scheduled_times.map((t) => (
-                    <span key={t} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent text-accent-foreground">
-                      {t.slice(0, 5)}
-                      <button type="button" onClick={() => removeTime(t)}><X className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Total Qty</label>
-                  <input type="number" min={0} value={form.total_quantity} onChange={(e) => setForm({ ...form, total_quantity: +e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Current Qty</label>
-                  <input type="number" min={0} value={form.current_quantity} onChange={(e) => setForm({ ...form, current_quantity: +e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Low Stock At</label>
-                  <input type="number" min={0} value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: +e.target.value })}
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:ring-2 focus:ring-ring focus:outline-none" />
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider ml-1">Inventory Management</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-slate-400 block ml-1">Total</span>
+                    <input type="number" min={0} value={form.total_quantity} onChange={(e) => setForm({ ...form, total_quantity: +e.target.value })}
+                      className="w-full h-10 px-3 rounded-[12px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-slate-400 block ml-1">Current</span>
+                    <input type="number" min={0} value={form.current_quantity} onChange={(e) => setForm({ ...form, current_quantity: +e.target.value })}
+                      className="w-full h-10 px-3 rounded-[12px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-slate-400 block ml-1">Low At</span>
+                    <input type="number" min={0} value={form.low_stock_threshold} onChange={(e) => setForm({ ...form, low_stock_threshold: +e.target.value })}
+                      className="w-full h-10 px-3 rounded-[12px] border border-slate-200 bg-slate-50 text-slate-800 font-bold text-xs" />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={closeDialog} className="px-4 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">Cancel</button>
-                <button type="submit" disabled={saveMutation.isPending} className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                  {saveMutation.isPending ? "Saving…" : editId ? "Update" : "Add"}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={closeDialog} className="flex-1 h-12 rounded-[16px] border border-slate-100 font-bold text-slate-500 hover:bg-slate-50 transition-all text-sm">Cancel</button>
+                <button type="submit" disabled={saveMutation.isPending} className="flex-1 h-12 rounded-[16px] bg-[#0070c9] text-white font-black text-sm hover:bg-[#005ea9] shadow-md shadow-blue-500/20 disabled:opacity-50 transition-all">
+                  {saveMutation.isPending ? "Saving…" : editId ? "Update Med" : "Add Med"}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+
+      <AppFooter />
     </div>
   );
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }

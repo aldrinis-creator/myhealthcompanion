@@ -1,0 +1,54 @@
+import { useNavigate } from "react-router-dom";
+import { ClipboardList, FileText, Search, MessageSquare, Pill, Video, ArrowLeft, Heart, Pill as Tablets, Globe } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+
+const fadeIn = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { duration: 0.3 }
+};
+
+export default function HealthTools() {
+    const navigate = useNavigate();
+
+    const tools = [
+        { title: "Doctor Visit Report", desc: "Consolidated health summary with vitals...", icon: <ClipboardList className="w-6 h-6" /> },
+        { title: "Medical Documents", desc: "Store, organize, and share your medical...", icon: <FileText className="w-6 h-6" /> },
+        { title: "Document Analyzer", desc: "Upload X-rays, lab reports, prescription...", icon: <Search className="w-6 h-6" /> },
+        { title: "Symptom Checker", desc: "Describe symptoms and get guidance on...", icon: <MessageSquare className="w-6 h-6" /> },
+        { title: "Medication Info", desc: "Look up dosages, side effects, and...", icon: <Pill className="w-6 h-6" /> },
+        { title: "Tele-Consult", desc: "Record consultations and get AI transcripti...", icon: <Video className="w-6 h-6" /> },
+    ];
+
+    return (
+        <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] font-sans">
+            <AppHeader title="Health Tools" showBack showTabs={false} onBack={() => navigate("/my-health")} />
+
+            <main className="container max-w-4xl mx-auto py-8 px-6 space-y-10">
+                <div className="grid grid-cols-2 gap-4">
+                    {tools.map((tool, i) => (
+                        <motion.div
+                            key={i}
+                            {...fadeIn}
+                            transition={{ delay: i * 0.05 }}
+                            className="bg-white p-6 rounded-[24px] border border-black/5 shadow-sm flex flex-col text-center items-center gap-4 hover:shadow-md transition-shadow group cursor-pointer"
+                        >
+                            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-[#0087c1] group-hover:bg-[#0087c1] group-hover:text-white transition-colors">
+                                {tool.icon}
+                            </div>
+                            <div>
+                                <h3 className="font-black text-[15px] mb-1">{tool.title}</h3>
+                                <p className="text-[12px] text-[#64748b] font-medium leading-tight">{tool.desc}</p>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            </main>
+
+            <AppFooter />
+        </div>
+    );
+}

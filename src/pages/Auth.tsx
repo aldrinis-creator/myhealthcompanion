@@ -1,26 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Heart, Mail, Lock, Eye, EyeOff, Smartphone, Phone } from "lucide-react";
+import { Heart, User, Shield, Mail, Smartphone, Lock, Eye, EyeOff, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Role = "user" | "guardian";
 type Method = "email" | "mobile";
 
-export default function AuthPage() {
+export default function Auth() {
   const [role, setRole] = useState<Role>("user");
   const [method, setMethod] = useState<Method>("email");
   const [isLogin, setIsLogin] = useState(true);
-
+  const [showPw, setShowPw] = useState(false);
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-
+  
   const [countryCode, setCountryCode] = useState("+91");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const dummyEmail = (phone: string) =>
     `${phone.replace(/\+/g, "")}@phone.myhealthcompanion.app`;
@@ -33,6 +38,7 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Welcome back!");
+        navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -63,6 +69,7 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email: mappedEmail, password });
         if (error) throw error;
         toast.success("Welcome back!");
+        navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({
           email: mappedEmail,
@@ -70,11 +77,10 @@ export default function AuthPage() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        // Trigger OTP verification for mobile signup
         const { error: otpError } = await supabase.auth.signInWithOtp({ phone: fullPhone });
         if (otpError) throw otpError;
         setOtpSent(true);
-        toast.success("OTP sent to your mobile number for verification");
+        toast.success("OTP sent to your mobile number");
       }
     } catch (err: any) {
       toast.error(err.message || "Authentication failed");
@@ -95,6 +101,7 @@ export default function AuthPage() {
       });
       if (error) throw error;
       toast.success("Welcome back!");
+      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Invalid OTP");
     } finally {
@@ -122,256 +129,215 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-muted px-4 py-8">
-      {/* Role toggle */}
-      <div className="flex rounded-full border border-border bg-card shadow-sm mb-8 overflow-hidden">
-        <button
-          onClick={() => setRole("user")}
-          className={`px-6 py-2 text-sm font-medium transition-colors ${
-            role === "user"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          User
-        </button>
-        <button
-          onClick={() => setRole("guardian")}
-          className={`px-6 py-2 text-sm font-medium transition-colors ${
-            role === "guardian"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Guardian
-        </button>
-      </div>
-
-      {/* Heart icon */}
-      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center mb-6 shadow-lg">
-        <Heart className="w-10 h-10 text-primary-foreground fill-primary-foreground" />
-      </div>
-
-      {/* Card */}
-      <div className="w-full max-w-md bg-card rounded-2xl shadow-lg p-8 space-y-6">
-        {/* Heading */}
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">
-            {isLogin ? "Welcome Back" : "Create Account"}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {isLogin
-              ? "Sign in to access your health records"
-              : "Sign up to start managing your health"}
-          </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f9fafb] p-6 font-sans">
+      <div className="w-full max-w-[420px] space-y-6">
+        {/* Main Logo Icon */}
+        <div className="flex justify-center mb-2">
+          <div className="w-[64px] h-[64px] bg-[#0070c9] rounded-[20px] flex items-center justify-center shadow-lg shadow-blue-500/10 transition-transform hover:scale-105">
+            <Heart className="w-8 h-8 text-white fill-current" />
+          </div>
         </div>
 
-        {/* Method toggle */}
-        <div className="flex rounded-full border border-border bg-muted/50 overflow-hidden">
-          <button
-            onClick={() => { setMethod("email"); setOtpSent(false); }}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-              method === "email"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            Email
-          </button>
-          <button
-            onClick={() => { setMethod("mobile"); setOtpSent(false); }}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-              method === "mobile"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Smartphone className="w-4 h-4" />
-            Mobile
-          </button>
+        {/* Auth Card */}
+        <div className="bg-white rounded-[32px] p-10 shadow-[0_8px_40px_rgb(0,0,0,0.04)] border border-slate-100">
+          <div className="flex flex-col items-center">
+            
+            {/* User/Guardian Toggles */}
+            <div className="w-full bg-[#f1f3fd] p-1.5 rounded-[18px] flex gap-1 mb-10">
+              <button
+                onClick={() => setRole("user")}
+                className={cn(
+                  "flex-1 h-12 rounded-[14px] flex items-center justify-center gap-2 transition-all font-bold text-sm tracking-tight",
+                  role === "user" ? "bg-[#0070c9] text-white shadow-md shadow-blue-500/10" : "text-[#7b8ca5] hover:text-[#0070c9]"
+                )}
+              >
+                <User className="w-4.5 h-4.5" /> User
+              </button>
+              <button
+                onClick={() => setRole("guardian")}
+                className={cn(
+                  "flex-1 h-12 rounded-[14px] flex items-center justify-center gap-2 transition-all font-bold text-sm tracking-tight",
+                  role === "guardian" ? "bg-[#0070c9] text-white shadow-md shadow-blue-500/10" : "text-[#7b8ca5] hover:text-[#0070c9]"
+                )}
+              >
+                <Shield className="w-4.5 h-4.5" /> Guardian
+              </button>
+            </div>
+
+            <div className="text-center mb-10">
+              <h1 className="text-[28px] font-black text-[#1d1d1f] mb-2 tracking-tight">
+                {isLogin ? "Welcome Back" : "Create Account"}
+              </h1>
+              <p className="text-[#86868b] font-medium text-sm">
+                {isLogin ? "Sign in to access your health records" : "Sign up to start managing your health"}
+              </p>
+            </div>
+
+            {/* Email/Mobile Toggles */}
+            <div className="w-full bg-[#f1f3fd] p-1.5 rounded-[18px] flex gap-1 mb-8">
+              <button
+                onClick={() => { setMethod("email"); setOtpSent(false); }}
+                className={cn(
+                  "flex-1 h-12 rounded-[14px] flex items-center justify-center gap-2 transition-all font-bold text-sm border-2",
+                  method === "email" ? "bg-white text-[#1d1d1f] border-[#e2e8f0] shadow-sm" : "text-[#7b8ca5] border-transparent hover:text-[#0070c9]"
+                )}
+              >
+                <Mail className="w-4.5 h-4.5" /> Email
+              </button>
+              <button
+                onClick={() => { setMethod("mobile"); setOtpSent(false); }}
+                className={cn(
+                  "flex-1 h-12 rounded-[14px] flex items-center justify-center gap-2 transition-all font-bold text-sm border-2",
+                  method === "mobile" ? "bg-white text-[#1d1d1f] border-[#e2e8f0] shadow-sm" : "text-[#7b8ca5] border-transparent hover:text-[#0070c9]"
+                )}
+              >
+                <Smartphone className="w-4.5 h-4.5" /> Mobile
+              </button>
+            </div>
+
+            {/* Forms */}
+            {method === "email" ? (
+              <form onSubmit={handleEmailSubmit} className="w-full space-y-6">
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b] group-focus-within:text-[#0070c9] transition-colors" />
+                  <Input
+                    type="email"
+                    placeholder="Email address"
+                    className="pl-12 h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-medium placeholder:text-[#86868b] focus:ring-1 focus:ring-[#0070c9]/20 focus:border-[#0070c9] transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b] group-focus-within:text-[#0070c9] transition-colors" />
+                  <Input
+                    type={showPw ? "text" : "password"}
+                    placeholder="Password"
+                    className="pl-12 pr-12 h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-medium placeholder:text-[#86868b] focus:ring-1 focus:ring-[#0070c9]/20 focus:border-[#0070c9] transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#0070c9] transition-colors"
+                  >
+                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                {isLogin && (
+                  <div className="flex justify-start">
+                    <button type="button" onClick={handleForgotPassword} className="text-[#0070c9] text-sm font-medium hover:underline transition-all">
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-14 bg-[#0070c9] hover:bg-[#005ea9] text-white text-lg font-bold rounded-[16px] shadow-sm transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : isLogin ? "Sign In" : "Sign Up"}
+                </Button>
+              </form>
+            ) : !otpSent ? (
+              <form onSubmit={handleMobileSubmit} className="w-full space-y-6">
+                <div className="flex gap-2">
+                  <div className="relative w-24">
+                    <Input
+                      type="text"
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-medium text-center"
+                    />
+                  </div>
+                  <div className="relative flex-1 group">
+                    <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b] group-focus-within:text-[#0070c9] transition-colors" />
+                    <Input
+                      type="tel"
+                      placeholder="Mobile number"
+                      className="pl-12 h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-medium placeholder:text-[#86868b] focus:ring-1 focus:ring-[#0070c9]/20 focus:border-[#0070c9] transition-all"
+                      value={mobileNumber}
+                      onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ""))}
+                      required
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b] group-focus-within:text-[#0070c9] transition-colors" />
+                  <Input
+                    type={showPw ? "text" : "password"}
+                    placeholder="Password"
+                    className="pl-12 pr-12 h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-medium placeholder:text-[#86868b] focus:ring-1 focus:ring-[#0070c9]/20 focus:border-[#0070c9] transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-14 bg-[#0070c9] hover:bg-[#005ea9] text-white text-lg font-bold rounded-[16px] shadow-sm transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : isLogin ? "Sign In" : "Sign Up"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="w-full space-y-6">
+                <p className="text-sm text-[#86868b] text-center font-medium">
+                  Enter the 6-digit OTP sent to {countryCode}{mobileNumber}
+                </p>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86868b] group-focus-within:text-[#0070c9] transition-colors" />
+                  <Input
+                    type="text"
+                    placeholder="000000"
+                    className="pl-12 h-14 rounded-[16px] bg-[#f9fafb] border-[#e2e8f0] text-[#1d1d1f] font-extrabold text-center tracking-[0.5em] focus:ring-1 focus:ring-[#0070c9]/20 focus:border-[#0070c9] transition-all"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    required
+                    maxLength={6}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-14 bg-[#0070c9] hover:bg-[#005ea9] text-white text-lg font-bold rounded-[16px] shadow-sm transition-all active:scale-[0.98]"
+                  disabled={loading}
+                >
+                  {loading ? "Verifying..." : "Verify & Sign In"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setOtpSent(false); setOtp(""); }}
+                  className="w-full text-sm text-[#0070c9] font-bold hover:underline"
+                >
+                  ← Change number
+                </button>
+              </form>
+            )}
+
+            <div className="text-center mt-8">
+              <p className="text-[#86868b] font-medium text-sm">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+                <button
+                  type="button"
+                  onClick={() => { setIsLogin(!isLogin); setOtpSent(false); }}
+                  className="text-[#0070c9] font-bold hover:underline transition-all"
+                >
+                  {isLogin ? "Sign up" : "Sign in"}
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-
-        {/* Email form */}
-        {method === "email" && (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-                placeholder="Email address"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type={showPw ? "text" : "password"}
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-                  placeholder="Password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {isLogin && (
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Please wait…" : isLogin ? "Sign In" : "Sign Up"}
-            </button>
-          </form>
-        )}
-
-        {/* Mobile form */}
-        {method === "mobile" && !otpSent && (
-          <form onSubmit={handleMobileSubmit} className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative w-24">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <select
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  className="w-full pl-10 pr-2 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring appearance-none"
-                >
-                  <option value="+91">+91</option>
-                  <option value="+1">+1</option>
-                  <option value="+44">+44</option>
-                  <option value="+61">+61</option>
-                  <option value="+971">+971</option>
-                </select>
-              </div>
-              <div className="relative flex-1">
-                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="tel"
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ""))}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-                  placeholder="Mobile number"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type={showPw ? "text" : "password"}
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-                  placeholder="Password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {isLogin && (
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Please wait…" : isLogin ? "Sign In" : "Sign Up"}
-            </button>
-          </form>
-        )}
-
-        {/* OTP verification (only during mobile signup) */}
-        {method === "mobile" && otpSent && (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Enter the 6-digit OTP sent to {countryCode}{mobileNumber}
-            </p>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground text-center tracking-[0.5em]"
-                placeholder="000000"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-full bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Verifying…" : "Verify & Sign In"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setOtpSent(false); setOtp(""); }}
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
-            >
-              ← Change number
-            </button>
-          </form>
-        )}
-
-        {/* Toggle sign in / sign up */}
-        <p className="text-center text-sm text-muted-foreground">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-          <button
-            onClick={() => { setIsLogin(!isLogin); setOtpSent(false); }}
-            className="text-primary font-medium hover:underline"
-          >
-            {isLogin ? "Sign Up" : "Sign In"}
-          </button>
-        </p>
       </div>
     </div>
   );
