@@ -18,6 +18,34 @@ export interface HealthPassportData {
   trend: "improving" | "declining" | "stable";
 }
 
+const calculateVitalsScoreFromScans = (
+  healthScans: any[] | null,
+  vitalsScans: any[] | null
+): number => {
+  let wellnessScore = 0;
+  let vitalsScore = 0;
+
+  // Wellness scan: 15 base + 5 bonus = 20 max
+  if (healthScans && healthScans.length > 0) {
+    const best = healthScans[0]; // already ordered desc
+    wellnessScore = 15; // base for completing a scan
+    const avg = ((best.hydration_score || 0) + (best.rest_score || 0) + (best.vitality_score || 0)) / 3;
+    if (avg >= 7) wellnessScore += 5;
+    else if (avg >= 5) wellnessScore += 3;
+    else if (avg >= 3) wellnessScore += 1;
+  }
+
+  // Vitals scan: 15 base + up to 10 bonus = 25 max
+  if (vitalsScans && vitalsScans.length > 0) {
+    const best = vitalsScans[0];
+    vitalsScore = 15; // base
+    if (best.heart_rate && best.heart_rate > 0) vitalsScore += 5;
+    if (best.respiratory_rate && best.respiratory_rate > 0) vitalsScore += 5;
+  }
+
+  return Math.max(wellnessScore, vitalsScore);
+};
+
 export const useHealthPassport = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -36,41 +64,90 @@ export const useHealthPassport = () => {
         .eq("passport_date", today)
         .maybeSingle();
 
-      if (data) return data as HealthPassportData;
+      let passportData = data as HealthPassportData | null;
 
-      // If no record exists for today, create one (and calculate streak)
-      const { data: prevRecord } = await supabase
-        .from("daily_health_passport")
-        .select("streak_days, total_score")
-        .eq("user_id", user.id)
-        .lt("passport_date", today)
-        .order("passport_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (!passportData) {
+        // Create new record
+        const { data: prevRecord } = await supabase
+          .from("daily_health_passport")
+          .select("streak_days, total_score")
+          .eq("user_id", user.id)
+          .lt("passport_date", today)
+          .order("passport_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      const newStreak = prevRecord ? prevRecord.streak_days + 1 : 1;
-      
-      const newPassport = {
-        user_id: user.id,
-        passport_date: today,
-        checkin_score: 0,
-        vitals_score: 0,
-        activity_score: 0,
-        wellness_score: 0,
-        medication_score: 0,
-        bonus_points: 0,
-        total_score: 0,
-        streak_days: newStreak,
-        trend: "stable" as const,
-      };
+        const newStreak = prevRecord ? prevRecord.streak_days + 1 : 1;
 
-      const { data: created, error: insertError } = await supabase
-        .from("daily_health_passport")
-        .insert([newPassport])
-        .select()
-        .single();
+        const newPassport = {
+          user_id: user.id,
+          passport_date: today,
+          checkin_score: 0,
+          vitals_score: 0,
+          activity_score: 0,
+          wellness_score: 0,
+          medication_score: 0,
+          bonus_points: 0,
+          total_score: 0,
+          streak_days: newStreak,
+          trend: "stable" as const,
+        };
 
-      return created as HealthPassportData;
+        const { data: created, error: insertError } = await supabase
+          .from("daily_health_passport")
+          .insert([newPassport])
+          .select()
+          .single();
+
+        passportData = created as HealthPassportData;
+      }
+
+      if (!passportData) return null;
+
+      // Calculate vitals_score from today's scans
+      const todayStart = `${today}T00:00:00.000Z`;
+      const todayEnd = `${today}T23:59:59.999Z`;
+
+      const [{ data: healthScans }, { data: vitalsScans }] = await Promise.all([
+        supabase
+          .from("health_scans")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("created_at", todayStart)
+          .lte("created_at", todayEnd)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("vitals_scans")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("created_at", todayStart)
+          .lte("created_at", todayEnd)
+          .order("created_at", { ascending: false })
+          .limit(5),
+      ]);
+
+      const newVitalsScore = calculateVitalsScoreFromScans(healthScans, vitalsScans);
+
+      if (newVitalsScore !== passportData.vitals_score) {
+        const newTotal =
+          passportData.checkin_score +
+          newVitalsScore +
+          passportData.activity_score +
+          passportData.wellness_score +
+          passportData.medication_score +
+          passportData.bonus_points;
+
+        await supabase
+          .from("daily_health_passport")
+          .update({ vitals_score: newVitalsScore, total_score: newTotal })
+          .eq("id", passportData.id);
+
+        passportData.vitals_score = newVitalsScore;
+        passportData.total_score = newTotal;
+      }
+
+      return passportData;
     },
     enabled: !!user,
   });
@@ -94,7 +171,6 @@ export const useHealthPassport = () => {
     },
   });
 
-  // Helper to recalculate total score based on provided logic
   const calculateTotalScore = (p: HealthPassportData) => {
     return p.checkin_score + p.vitals_score + p.activity_score + p.wellness_score + p.medication_score + p.bonus_points;
   };
