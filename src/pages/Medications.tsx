@@ -460,6 +460,3 @@ export default function Medications() {
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
-}
