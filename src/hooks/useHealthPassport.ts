@@ -141,7 +141,7 @@ export const useHealthPassport = () => {
         await supabase
           .from("daily_health_passport")
           .update({ vitals_score: newVitalsScore, total_score: newTotal })
-          .eq("id", passportData.id);
+          .eq("id", passportData.id!);
 
         passportData.vitals_score = newVitalsScore;
         passportData.total_score = newTotal;
