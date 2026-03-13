@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Heart, Globe, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-interface AppHeaderProps {
+export interface AppHeaderProps {
   title?: string;
   showBack?: boolean;
   onBack?: () => void;
   showTabs?: boolean;
+  activeTab?: string;
+  rightElement?: React.ReactNode;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ 

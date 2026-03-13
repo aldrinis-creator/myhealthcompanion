@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  Pill, Plus, Edit2, Trash2, AlertTriangle, Clock, X, Bell, Truck, Scan, ChevronRight, History
+  Pill, Plus, Edit2, Trash2, AlertTriangle, Clock, X, Bell, Truck, Scan, ChevronRight, History, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";

@@ -26,5 +26,7 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { session, loading, signOut };
+  const user = session?.user ?? null;
+
+  return { session, user, loading, signOut };
 }

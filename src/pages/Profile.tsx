@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import {
   UserCircle, Save, Heart, Phone, Shield, Lock, Eye, EyeOff, Smartphone, Mail,
   CheckCircle2, AlertCircle, CreditCard, Camera, Info, Calendar, User, Activity,
-  Droplets, Utensils, Stethoscope, ChevronRight
+  Droplets, Utensils, Stethoscope, ChevronRight, ArrowLeft
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
