@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import {
   Pill, Plus, Edit2, Trash2, AlertTriangle, Clock, X, Bell, Truck, Scan, ChevronRight, History, Pencil
 } from "lucide-react";
