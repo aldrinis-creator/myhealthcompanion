@@ -59,6 +59,7 @@ function App() {
             <Route path="/face-scan" element={<FaceScan />} />
             <Route path="/health-vitals" element={<HealthVitals />} />
             <Route path="/nutrition-advisor" element={<NutritionAdvisor />} />
+            <Route path="/doctor-visit-report" element={<DoctorVisitReport />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
           
