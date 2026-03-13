@@ -15,7 +15,7 @@ export default function HealthTools() {
     const navigate = useNavigate();
 
     const tools = [
-        { title: "Doctor Visit Report", desc: "Consolidated health summary with vitals...", icon: <ClipboardList className="w-6 h-6" /> },
+        { title: "Doctor Visit Report", desc: "Consolidated health summary with vitals...", icon: <ClipboardList className="w-6 h-6" />, path: "/doctor-visit-report" },
         { title: "Medical Documents", desc: "Store, organize, and share your medical...", icon: <FileText className="w-6 h-6" /> },
         { title: "Document Analyzer", desc: "Upload X-rays, lab reports, prescription...", icon: <Search className="w-6 h-6" /> },
         { title: "Symptom Checker", desc: "Describe symptoms and get guidance on...", icon: <MessageSquare className="w-6 h-6" /> },
