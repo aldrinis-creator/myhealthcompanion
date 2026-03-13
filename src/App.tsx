@@ -22,6 +22,7 @@ const Profile = lazy(() => import("@/pages/Profile"));
 const FaceScan = lazy(() => import("@/pages/FaceScan"));
 const HealthVitals = lazy(() => import("@/pages/HealthVitals"));
 const NutritionAdvisor = lazy(() => import("@/pages/NutritionAdvisor"));
+const DoctorVisitReport = lazy(() => import("@/pages/DoctorVisitReport"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-white">
