@@ -13,7 +13,6 @@ import {
   TrendingUp,
   Footprints
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import HeartRateMonitor from "@/components/HeartRateMonitor";
