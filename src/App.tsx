@@ -22,6 +22,7 @@ const Profile = lazy(() => import("@/pages/Profile"));
 const FaceScan = lazy(() => import("@/pages/FaceScan"));
 const HealthVitals = lazy(() => import("@/pages/HealthVitals"));
 const NutritionAdvisor = lazy(() => import("@/pages/NutritionAdvisor"));
+const DoctorVisitReport = lazy(() => import("@/pages/DoctorVisitReport"));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-white">
@@ -58,6 +59,7 @@ function App() {
             <Route path="/face-scan" element={<FaceScan />} />
             <Route path="/health-vitals" element={<HealthVitals />} />
             <Route path="/nutrition-advisor" element={<NutritionAdvisor />} />
+            <Route path="/doctor-visit-report" element={<DoctorVisitReport />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
           

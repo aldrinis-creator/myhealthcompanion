@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import {
   Pill, Plus, Edit2, Trash2, AlertTriangle, Clock, X, Bell, Truck, Scan, ChevronRight, History, Pencil
 } from "lucide-react";
@@ -50,6 +51,8 @@ export default function Medications() {
   const [form, setForm] = useState(defaultForm);
   const [timeInput, setTimeInput] = useState("");
 
+  const today = format(new Date(), "yyyy-MM-dd");
+
   const { data: meds = [], isLoading } = useQuery({
     queryKey: ["medications", userId],
     enabled: !!userId,
@@ -63,6 +66,39 @@ export default function Medications() {
       return data as Medication[];
     },
   });
+
+  const { data: todayLogs = [], refetch: refetchLogs } = useQuery({
+    queryKey: ["medication-logs-today", userId, today],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("medication_logs")
+        .select("*")
+        .eq("user_id", userId!)
+        .gte("scheduled_at", `${today}T00:00:00`)
+        .lte("scheduled_at", `${today}T23:59:59`);
+      return data || [];
+    },
+  });
+
+  const markTaken = async (medId: string, scheduledTime: string) => {
+    const scheduledAt = `${today}T${scheduledTime}:00`;
+    const existing = todayLogs.find((l: any) => l.medication_id === medId && l.scheduled_at === scheduledAt);
+    if (existing) {
+      await supabase.from("medication_logs").update({ status: "taken", taken_at: new Date().toISOString() }).eq("id", existing.id);
+    } else {
+      await supabase.from("medication_logs").insert({
+        user_id: userId!, medication_id: medId, scheduled_at: scheduledAt, status: "taken", taken_at: new Date().toISOString(),
+      });
+    }
+    refetchLogs();
+    toast.success("Marked as taken ✓");
+  };
+
+  const isTaken = (medId: string, scheduledTime: string) => {
+    const scheduledAt = `${today}T${scheduledTime}:00`;
+    return todayLogs.some((l: any) => l.medication_id === medId && l.scheduled_at === scheduledAt && l.status === "taken");
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -199,11 +235,69 @@ export default function Medications() {
           <ChevronRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" />
         </motion.div>
 
+        {/* Today's Schedule */}
+        {meds.filter(m => m.is_active !== false).length > 0 && (
+          <motion.div {...fadeIn} transition={{ delay: 0.2 }} className="space-y-4">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-[11px] font-black text-muted-foreground tracking-[0.2em] uppercase">Today's Schedule</h3>
+              <span className="text-[12px] font-black text-foreground">{format(new Date(), "EEEE, MMM d")}</span>
+            </div>
+            <div className="space-y-3">
+              {meds.filter(m => m.is_active !== false).map((med) => {
+                const times = med.scheduled_times || [med.scheduled_time];
+                return times.map((time) => {
+                  const taken = isTaken(med.id, time);
+                  return (
+                    <div key={`${med.id}-${time}`} className={cn(
+                      "bg-card rounded-[20px] border shadow-sm p-4 flex items-center justify-between transition-all",
+                      taken ? "border-health-green/20 bg-health-green/5" : "border-border"
+                    )}>
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center text-[11px] font-black",
+                          taken ? "bg-health-green/10 text-health-green" : "bg-muted text-muted-foreground"
+                        )}>
+                          {time}
+                        </div>
+                        <div>
+                          <p className="font-black text-sm text-foreground">{med.name}</p>
+                          <p className="text-[11px] text-muted-foreground font-bold">{med.composition ? `(${med.composition})` : med.dosage}</p>
+                        </div>
+                        <span className={cn(
+                          "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
+                          med.severity === "high" || med.severity === "critical" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                        )}>
+                          {med.severity === "high" || med.severity === "critical" ? "High" : "Normal"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Bell className="w-3.5 h-3.5" />
+                          <span className="text-[9px] font-bold">0/3</span>
+                        </div>
+                        <button
+                          onClick={() => !taken && markTaken(med.id, time)}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[11px] font-black transition-all active:scale-95",
+                            taken ? "bg-health-green/10 text-health-green" : "bg-primary text-primary-foreground shadow-sm"
+                          )}
+                        >
+                          {taken ? "Taken ✓" : "Take"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* Meds List */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-1">
-            <h3 className="text-[11px] font-black text-[#64748b] tracking-[0.2em] uppercase opacity-70">Medication Inventory</h3>
-            <span className="text-[12px] font-black text-[#1e293b]">{format(new Date(), "p")}</span>
+            <h3 className="text-[11px] font-black text-muted-foreground tracking-[0.2em] uppercase opacity-70">Medication Inventory</h3>
+            <span className="text-[12px] font-black text-foreground">{format(new Date(), "p")}</span>
           </div>
 
           {isLoading ? (
@@ -366,6 +460,3 @@ export default function Medications() {
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
-}

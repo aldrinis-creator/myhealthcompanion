@@ -75,6 +75,42 @@ export default function Dashboard() {
       <AppHeader />
 
       <main className="max-w-lg mx-auto p-4 space-y-4 pb-32">
+        {/* Health Dashboard Summary Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-[32px] shadow-sm p-6 border border-border cursor-pointer"
+          onClick={() => navigate("/my-health")}
+        >
+          <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-5">Health Dashboard</h3>
+          <div className="flex gap-4">
+            <div className="flex-1 flex items-center gap-4 p-4 bg-destructive/5 rounded-[20px] border border-destructive/10">
+              <div className="w-12 h-12 bg-destructive/10 rounded-2xl flex items-center justify-center">
+                <Heart className="w-6 h-6 text-destructive" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Wellness</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black text-foreground">{passport?.total_score || passportHook?.total_score || 48}</span>
+                  <TrendingUp className="w-4 h-4 text-health-green" />
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 flex items-center gap-4 p-4 bg-primary/5 rounded-[20px] border border-primary/10">
+              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                <Pill className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Meds</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black text-foreground">93%</span>
+                  <span className="text-[9px] font-bold text-muted-foreground">7-day avg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Top Action Card */}
         <motion.div
            initial={{ opacity: 0, y: 10 }}
