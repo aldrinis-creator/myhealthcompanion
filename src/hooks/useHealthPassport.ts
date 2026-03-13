@@ -167,7 +167,7 @@ export const useHealthPassport = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["health-passport", user?.id, today] });
+      queryClient.invalidateQueries({ queryKey: ["health-passport"] });
     },
   });
 
