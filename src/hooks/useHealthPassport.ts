@@ -50,7 +50,7 @@ export const useHealthPassport = () => {
 
       const newStreak = prevRecord ? prevRecord.streak_days + 1 : 1;
       
-      const newPassport: Partial<HealthPassportData> = {
+      const newPassport = {
         user_id: user.id,
         passport_date: today,
         checkin_score: 0,
@@ -61,12 +61,12 @@ export const useHealthPassport = () => {
         bonus_points: 0,
         total_score: 0,
         streak_days: newStreak,
-        trend: "stable",
+        trend: "stable" as const,
       };
 
       const { data: created, error: insertError } = await supabase
         .from("daily_health_passport")
-        .insert(newPassport)
+        .insert([newPassport])
         .select()
         .single();
 

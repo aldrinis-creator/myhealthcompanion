@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Activity, Thermometer, Droplets, Wind, RefreshCw, Save, History, Heart, Globe, Clipboard, Smartphone, Shield } from "lucide-react";
+import { ArrowLeft, Activity, Thermometer, Droplets, Wind, RefreshCw, Save, History, Heart, Globe, Clipboard, Smartphone, Shield, Clock } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { motion } from "framer-motion";
