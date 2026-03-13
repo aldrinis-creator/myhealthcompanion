@@ -50,6 +50,8 @@ export default function Medications() {
   const [form, setForm] = useState(defaultForm);
   const [timeInput, setTimeInput] = useState("");
 
+  const today = format(new Date(), "yyyy-MM-dd");
+
   const { data: meds = [], isLoading } = useQuery({
     queryKey: ["medications", userId],
     enabled: !!userId,
@@ -63,6 +65,39 @@ export default function Medications() {
       return data as Medication[];
     },
   });
+
+  const { data: todayLogs = [], refetch: refetchLogs } = useQuery({
+    queryKey: ["medication-logs-today", userId, today],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("medication_logs")
+        .select("*")
+        .eq("user_id", userId!)
+        .gte("scheduled_at", `${today}T00:00:00`)
+        .lte("scheduled_at", `${today}T23:59:59`);
+      return data || [];
+    },
+  });
+
+  const markTaken = async (medId: string, scheduledTime: string) => {
+    const scheduledAt = `${today}T${scheduledTime}:00`;
+    const existing = todayLogs.find((l: any) => l.medication_id === medId && l.scheduled_at === scheduledAt);
+    if (existing) {
+      await supabase.from("medication_logs").update({ status: "taken", taken_at: new Date().toISOString() }).eq("id", existing.id);
+    } else {
+      await supabase.from("medication_logs").insert({
+        user_id: userId!, medication_id: medId, scheduled_at: scheduledAt, status: "taken", taken_at: new Date().toISOString(),
+      });
+    }
+    refetchLogs();
+    toast.success("Marked as taken ✓");
+  };
+
+  const isTaken = (medId: string, scheduledTime: string) => {
+    const scheduledAt = `${today}T${scheduledTime}:00`;
+    return todayLogs.some((l: any) => l.medication_id === medId && l.scheduled_at === scheduledAt && l.status === "taken");
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
