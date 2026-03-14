@@ -1,4 +1,5 @@
-import { useNavigate, useCallback } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
 import { Activity, Dumbbell } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";

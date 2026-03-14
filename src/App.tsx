@@ -33,6 +33,7 @@ const PageLoader = () => (
 
 function App() {
   const { session, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) return <PageLoader />;
 
@@ -40,7 +41,8 @@ function App() {
     <>
       <Toaster position="top-right" richColors />
       <Suspense fallback={<PageLoader />}>
-        <Routes>
+        <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
           <Route path="/auth" element={session ? <Navigate to="/dashboard" replace /> : <Auth />} />
           
           <Route element={<ProtectedRoute session={session} />}>
