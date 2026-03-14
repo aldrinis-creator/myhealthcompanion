@@ -1,14 +1,20 @@
 import { useNavigate } from "react-router-dom";
-import { Pill, Wrench, Truck, Activity, Scan, Heart, Utensils, Stethoscope, BookOpen, ChevronRight } from "lucide-react";
+import { Pill, Wrench, Truck, Activity, Scan, Heart, Utensils, Stethoscope, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 
-const fadeIn = {
-    initial: { opacity: 0, scale: 0.95 },
-    animate: { opacity: 1, scale: 1 },
-    transition: { duration: 0.3 }
+const containerVariants = {
+    hidden: {},
+    visible: {
+        transition: { staggerChildren: 0.04 }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.2 } }
 };
 
 export default function MyHealth() {
@@ -43,11 +49,17 @@ export default function MyHealth() {
             <AppHeader />
 
             <main className="container max-w-lg mx-auto py-6 px-6 space-y-8">
-                <div className="grid grid-cols-3 gap-3">
+                <motion.div
+                    className="grid grid-cols-3 gap-3"
+                    style={{ willChange: "transform" }}
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
                     {categories.map((cat) => (
                         <motion.button
                             key={cat.id}
-                            {...fadeIn}
+                            variants={itemVariants}
                             onClick={() => handleCategoryClick(cat.id)}
                             className={`bg-white p-5 rounded-[24px] border border-black/5 shadow-sm flex flex-col items-center gap-3 hover:shadow-xl hover:border-[#0087c1]/20 transition-all group ${cat.id === 'tablets' ? 'ring-2 ring-[#0087c1]' : ''}`}
                         >
@@ -57,7 +69,7 @@ export default function MyHealth() {
                             <span className="font-black text-[12px] text-center leading-tight opacity-90">{cat.name}</span>
                         </motion.button>
                     ))}
-                </div>
+                </motion.div>
 
                 <div className="bg-white rounded-[32px] border-t-[6px] border-[#0087c1] shadow-2xl shadow-blue-900/10 p-8 space-y-6 flex flex-col items-center text-center">
                     <div className="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center text-[#0087c1] shadow-inner">
@@ -81,5 +93,4 @@ export default function MyHealth() {
             <AppFooter />
         </div>
     );
-
 }
