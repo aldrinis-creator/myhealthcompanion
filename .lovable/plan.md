@@ -1,33 +1,33 @@
 
-Restore Troubleshooting Plan (March 10 state)
 
-1) Confirm we are restoring the correct snapshot
-- In History, pick the entry from March 10 that is clearly before the unwanted changes.
-- If there are multiple March 10 entries, start with the earliest one.
+## Fix: ActivityWorkout Page Freezing on Exit
 
-2) Run restore correctly (both device paths)
-- Desktop: Plus (+) in chat input → History (or clock icon in top nav) → select March 10 entry → click Restore.
-- Mobile: switch to Preview mode → clock icon bottom-left (or ... menu bottom-right → History) → select March 10 entry → tap Restore.
+### Root Cause Analysis
 
-3) Verify restore actually applied
-- Immediately check one “known changed” screen (you are on /dashboard now).
-- If visuals/content are unchanged, repeat restore using a different March 10 entry (timezone/order can make the wrong snapshot look identical).
+The ActivityWorkout page uses framer-motion animations that don't cleanly unmount when navigating away. Combined with the destination page (MyHealth) simultaneously mounting 9 animated grid tiles, this creates a main-thread bottleneck — the browser stalls processing exit animations and entry animations at the same time.
 
-4) Push restored version live
-- Restore only updates editor state first.
-- Click Publish → Update so the published URL reflects the restored snapshot.
+### Changes
 
-5) If restore still appears to do nothing
-- Hard refresh preview (Cmd/Ctrl+Shift+R) and reopen History.
-- Test in an incognito/private window to bypass cached assets.
-- Use chat-message-level Revert on the message right before unwanted edits as a fallback path.
+**1. Wrap route transitions with `AnimatePresence` in App.tsx**
+- Import `AnimatePresence` from framer-motion around the `Routes` component to properly handle exit animations and prevent orphaned animation frames.
 
-Clarification needed from you before final recovery execution
-- Are you on desktop or mobile right now?
-- After pressing Restore, do you see any toast/confirmation, or absolutely nothing?
-- Does Preview URL change behavior while Published URL stays old, or are both unchanged?
+**2. Simplify ActivityWorkout animations**
+- Replace the current `motion.div` cards with simpler CSS transitions (`transition-opacity`) instead of framer-motion, since this page is lightweight and doesn't need JS-driven animation.
+- This eliminates framer-motion's animation loop from persisting during unmount.
 
-Technical details
-- Restoring from History swaps project code snapshot; it can appear like “nothing happened” if the selected snapshot matches current state.
-- Published site does not change until Publish → Update is clicked.
-- Snapshot ordering can differ by timezone, so nearby entries on March 10 may be required to find the exact original state.
+**3. Optimize MyHealth grid mounting**
+- Stagger the 9 `motion.button` items using a single parent `motion.div` with `staggerChildren` instead of individual `fadeIn` on each button. This batches the animation work.
+- Add `will-change: transform` to the grid container for GPU compositing.
+
+**4. Add navigation transition guard**
+- In ActivityWorkout, use `useCallback` for the back navigation and add a small `requestAnimationFrame` wrapper before calling `navigate()` to let the current frame complete before triggering the route change.
+
+### Technical Details
+
+Files modified:
+- `src/pages/ActivityWorkout.tsx` — remove framer-motion, use CSS transitions, wrap navigate in rAF
+- `src/pages/MyHealth.tsx` — use staggerChildren pattern, add will-change
+- `src/App.tsx` — add AnimatePresence wrapper
+
+No database or backend changes required.
+
