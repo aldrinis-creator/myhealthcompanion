@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Auth from "@/pages/Auth";
@@ -32,6 +33,7 @@ const PageLoader = () => (
 
 function App() {
   const { session, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) return <PageLoader />;
 
@@ -39,7 +41,8 @@ function App() {
     <>
       <Toaster position="top-right" richColors />
       <Suspense fallback={<PageLoader />}>
-        <Routes>
+        <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
           <Route path="/auth" element={session ? <Navigate to="/dashboard" replace /> : <Auth />} />
           
           <Route element={<ProtectedRoute session={session} />}>
@@ -65,6 +68,7 @@ function App() {
           
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </AnimatePresence>
       </Suspense>
     </>
   );
