@@ -4,7 +4,7 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  base: process.env.GITHUB_PAGES ? "/MyHealthCompanion/" : "/",
+  base: process.env.GITHUB_PAGES ? "/MyHealthCompanion/" : '/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
