@@ -6,7 +6,7 @@
     <script>
       // Single Page App redirect for GitHub Pages
       // Converts /repo/path into /repo/?/path so index.html can restore it
-      var pathSegmentsToKeep = 1; // keep /MyHealthCompanion
+      var pathSegmentsToKeep=1; // keep /MyHealthCompanion
       var l = window.location;
       l.replace(
         l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
